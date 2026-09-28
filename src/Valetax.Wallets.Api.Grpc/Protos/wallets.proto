@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package valetax.wallets.v1;
+
+option csharp_namespace = "Valetax.Wallets.Api.Grpc";
+
+service WalletsService {
+  rpc GetWallet (GetWalletRequest) returns (GetWalletResponse);
+}
+
+message GetWalletRequest {
+  string owner_id = 1;
+}
+
+message GetWalletResponse {
+  string owner_id = 1;
+}

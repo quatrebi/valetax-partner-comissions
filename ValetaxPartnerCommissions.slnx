@@ -1,0 +1,23 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Valetax.Api/Valetax.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/aspire/">
+    <Project Path="src/Valetax.Aspire/Valetax.Aspire.csproj" />
+  </Folder>
+  <Folder Name="/src/libs/">
+    <Project Path="src/Valetax.Infrastructure/Valetax.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/partners.api/">
+    <Project Path="src/Valetax.Partners.Api.Contracts/Valetax.Partners.Api.Contracts.csproj" />
+    <Project Path="src/Valetax.Partners.Api.Grpc/Valetax.Partners.Api.Grpc.csproj" />
+    <Project Path="src/Valetax.Partners.Api/Valetax.Partners.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/wallets.api/">
+    <Project Path="src/Valetax.Wallets.Api.Grpc/Valetax.Wallets.Api.Grpc.csproj" />
+    <Project Path="src/Valetax.Wallets.Api/Valetax.Wallets.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Valetax.Api.Tests/Valetax.Api.Tests.csproj" />
+  </Folder>
+</Solution>

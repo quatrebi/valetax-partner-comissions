@@ -1,0 +1,7 @@
+[user]
+	email = dimon.h02@gmail.com
+	name = Dmitriy Khudnitskiy
+[commit]
+	gpgsign = false
+[tag]
+	gpgsign = false

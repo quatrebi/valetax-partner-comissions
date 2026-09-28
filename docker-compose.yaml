@@ -1,0 +1,124 @@
+services:
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  kafka:
+    image: confluentinc/cp-kafka:8.2.4
+    restart: unless-stopped
+    hostname: kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:${KAFKA_PORT:-29092}
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      CLUSTER_ID: q1Sh-9_ISia_zwGINzRvyQ
+    ports:
+      - "127.0.0.1:${KAFKA_PORT:-29092}:29092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 20s
+
+  dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:13
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_URLS: http://0.0.0.0:18888
+      ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL: http://0.0.0.0:18889
+      ASPIRE_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: "true"
+    ports:
+      - "127.0.0.1:${DASHBOARD_PORT:-18888}:18888"
+
+  partners-api:
+    restart: unless-stopped
+    stop_grace_period: 35s
+    build:
+      context: .
+      dockerfile: src/Valetax.Partners.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__PartnersDbContext: Host=postgres;Port=5432;Database=partners;Username=postgres;Password=${POSTGRES_PASSWORD}
+      Kafka__Host: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://dashboard:18889
+    ports:
+      - "127.0.0.1:5003:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      dashboard:
+        condition: service_started
+
+  wallets-api:
+    restart: unless-stopped
+    stop_grace_period: 35s
+    build:
+      context: .
+      dockerfile: src/Valetax.Wallets.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__WalletsDbContext: Host=postgres;Port=5432;Database=wallets;Username=postgres;Password=${POSTGRES_PASSWORD}
+      Kafka__Host: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://dashboard:18889
+    ports:
+      - "127.0.0.1:5264:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      dashboard:
+        condition: service_started
+
+  valetax-api:
+    restart: unless-stopped
+    stop_grace_period: 35s
+    build:
+      context: .
+      dockerfile: src/Valetax.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__CommissionsDbContext: Host=postgres;Port=5432;Database=commissions;Username=postgres;Password=${POSTGRES_PASSWORD}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://dashboard:18889
+      GrpcServices__Partners: http://partners-api:8081
+      GrpcServices__Wallets: http://wallets-api:8081
+    ports:
+      - "127.0.0.1:5274:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      dashboard:
+        condition: service_started
+      partners-api:
+        condition: service_healthy
+      wallets-api:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  kafka_data:

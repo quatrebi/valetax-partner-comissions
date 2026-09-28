@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package valetax.wallets.v1;
+
+option csharp_namespace = "Valetax.Wallets.Api.Grpc";
+
+service WalletPayoutsService {
+  rpc PayoutCommission (PayoutCommissionRequest) returns (PayoutCommissionResponse);
+}
+
+message PayoutCommissionRequest {
+  string owner_id = 1;
+  string commission_id = 2;
+  string amount = 3;
+}
+
+message PayoutCommissionResponse {
+  bool already_paid = 1;
+}
